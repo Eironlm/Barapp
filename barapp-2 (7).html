@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BarApp</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a0a; color: #e0e0e0;
+  height: 100vh; overflow: hidden;
+}
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* TABS */
+.tabs { display: flex; border-bottom: 1px solid #222; background: #111; }
+.tab {
+  flex: 1; padding: 15px 8px; text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: 500; letter-spacing: 0.3px; color: #666;
+  transition: color 0.2s; border: none; background: none;
+  border-bottom: 2px solid transparent; position: relative;
+}
+.tab.active { color: #fff; border-bottom-color: #4a9eff; }
+.tab:hover:not(.active) { color: #999; }
+.tab-badge {
+  position: absolute; top: 7px; right: calc(50% - 18px);
+  background: #e05050; color: #fff; font-size: 9px; font-weight: 700;
+  min-width: 15px; height: 15px; border-radius: 8px;
+  display: none; align-items: center; justify-content: center; padding: 0 3px;
+}
+
+.content { flex: 1; overflow-y: auto; padding: 16px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* MESAS */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 10px; padding-bottom: 20px;
+}
+.mesa {
+  aspect-ratio: 1; background: #1a1a1a; border: 1px solid #2a2a2a;
+  border-radius: 12px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; gap: 3px;
+}
+.mesa:hover { background: #222; border-color: #444; }
+.mesa-num { font-size: 20px; font-weight: 700; color: #888; }
+.mesa:hover .mesa-num { color: #ccc; }
+.mesa.ocupada { background: #1a241a; border-color: #2d4a2d; }
+.mesa.ocupada .mesa-num { color: #7ec87e; }
+.mesa.ocupada:hover { background: #1f2c1f; border-color: #3a5a3a; }
+.mesa-subtotal { font-size: 11px; color: #5a9a5a; font-weight: 500; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; align-items: flex-end; justify-content: center; z-index: 100;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: #141414; border: 1px solid #2a2a2a;
+  border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+  max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
+}
+.modal-header {
+  padding: 18px 20px 0;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.modal-header h2 { font-size: 18px; font-weight: 600; color: #fff; }
+.close-btn {
+  background: none; border: none; color: #555; font-size: 24px;
+  cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.close-btn:hover { color: #fff; }
+.modal-body { padding: 14px 20px; overflow-y: auto; flex: 1; }
+
+/* Items ya pedidos en modal */
+.ya-pedido {
+  background: #0f1f0f; border: 1px solid #1e3a1e; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 16px;
+}
+.ya-pedido-titulo {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: #5a9a5a; margin-bottom: 8px; font-weight: 600;
+}
+.ya-pedido-item {
+  display: flex; justify-content: space-between;
+  font-size: 13px; color: #7ec87e; padding: 2px 0;
+}
+
+.categoria { margin-bottom: 16px; }
+.categoria h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: #555; margin-bottom: 10px; font-weight: 600;
+}
+.item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; background: #1a1a1a; border-radius: 10px;
+  margin-bottom: 7px; border: 1px solid #1e1e1e; transition: border-color 0.15s;
+  min-height: 54px;
+}
+.item.activo { border-color: #2d4a2d; background: #192019; }
+.item-info { flex: 1; }
+.item-nombre { font-size: 14px; color: #ddd; }
+.item-precio { font-size: 12px; color: #666; margin-top: 2px; }
+.item-controls { display: flex; align-items: center; gap: 8px; }
+.btn-cant {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid #2e2e2e; background: #1e1e1e; color: #bbb;
+  font-size: 17px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  user-select: none;
+}
+.btn-cant:hover { background: #2a2a2a; color: #fff; }
+.cantidad {
+  font-size: 15px; font-weight: 600; min-width: 22px;
+  text-align: center; color: #fff;
+}
+.modal-footer {
+  padding: 14px 20px 22px; border-top: 1px solid #1e1e1e;
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+}
+.total-line {
+  display: flex; justify-content: space-between;
+  font-size: 15px; font-weight: 600; color: #aaa;
+}
+.total-line span:last-child { color: #fff; font-size: 18px; }
+.btn-primary {
+  width: 100%; padding: 14px; background: #2a5a2a; color: #a8e6a8;
+  border: 1px solid #3a7a3a; border-radius: 10px; font-size: 15px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s;
+}
+.btn-primary:hover { background: #326832; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* SERVIR */
+.subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.subtab {
+  padding: 8px 14px; border-radius: 8px; border: 1px solid #222;
+  background: #111; color: #555; font-size: 13px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.subtab.active { background: #1a1a1a; color: #fff; border-color: #3a3a3a; }
+.subtab:hover:not(.active) { color: #888; }
+.sub-badge {
+  background: #e05050; color: #fff; font-size: 10px; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  display: none; align-items: center; justify-content: center; padding: 0 3px;
+}
+
+.pedido-card {
+  background: #141414; border: 1px solid #1e1e1e; border-radius: 14px;
+  padding: 16px; margin-bottom: 12px; transition: border-color 0.3s;
+}
+.pedido-card.urgente { border-color: #5a2828; }
+.pedido-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.pedido-mesa { font-size: 16px; font-weight: 700; color: #fff; }
+.pedido-tiempo { font-size: 12px; font-weight: 600; }
+.pedido-items { margin-bottom: 12px; }
+.pedido-item {
+  display: flex; justify-content: space-between; padding: 5px 0;
+  font-size: 14px; color: #aaa; border-bottom: 1px solid #1a1a1a;
+}
+.pedido-item:last-child { border-bottom: none; }
+.pedido-total {
+  text-align: right; font-size: 18px; font-weight: 700;
+  color: #fff; margin-bottom: 12px;
+}
+.pedido-actions { display: flex; gap: 8px; }
+.btn-pago {
+  flex: 1; padding: 11px; border-radius: 10px;
+  border: 1px solid #2a2a2a; background: #1a1a1a; color: #aaa;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s;
+}
+.btn-pago:hover { background: #222; }
+.btn-pago.efectivo { border-color: #4a3a1a; color: #d4c49a; }
+.btn-pago.tarjeta { border-color: #1a2a4a; color: #9ab4d4; }
+.btn-cancelar {
+  padding: 11px 12px; border-radius: 10px;
+  border: 1px solid #2a1a1a; background: #180f0f; color: #885555;
+  font-size: 14px; cursor: pointer; transition: background 0.15s;
+}
+.btn-cancelar:hover { background: #201010; color: #bb6666; }
+
+/* TICKETS */
+.cal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px;
+}
+.cal-header h2 { font-size: 15px; font-weight: 600; color: #ddd; }
+.cal-nav { display: flex; gap: 6px; }
+.cal-nav button {
+  background: #1a1a1a; border: 1px solid #2a2a2a; color: #999;
+  padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.cal-nav button:hover { background: #222; color: #fff; }
+.resumen-dia {
+  background: #111; border: 1px solid #1e1e1e; border-radius: 12px;
+  padding: 16px; margin-bottom: 20px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.resumen-item { text-align: center; }
+.resumen-val { font-size: 18px; font-weight: 700; color: #fff; }
+.resumen-label { font-size: 10px; color: #555; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+.tickets-list { display: flex; flex-direction: column; gap: 10px; }
+.ticket {
+  background: #111; border: 1px solid #1e1e1e; border-radius: 12px; padding: 14px;
+}
+.ticket-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.ticket-mesa { font-weight: 700; color: #fff; font-size: 14px; }
+.ticket-hora { color: #555; font-size: 12px; }
+.ticket-items { margin-bottom: 10px; }
+.ticket-item {
+  display: flex; justify-content: space-between;
+  font-size: 13px; color: #888; padding: 2px 0;
+}
+.ticket-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 10px; border-top: 1px solid #1a1a1a;
+}
+.ticket-total { font-weight: 700; color: #fff; font-size: 16px; }
+.ticket-pago { font-size: 12px; padding: 4px 10px; border-radius: 6px; }
+.ticket-pago.efectivo { color: #d4c49a; background: #2a2410; }
+.ticket-pago.tarjeta { color: #9ab4d4; background: #101e2a; }
+
+/* CONFIG */
+.config-group { margin-bottom: 28px; }
+.config-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: #555; margin-bottom: 10px; font-weight: 600;
+}
+.config-row { display: flex; align-items: center; gap: 10px; }
+.config-input {
+  background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+  color: #fff; font-size: 16px; padding: 12px 16px; width: 110px;
+  text-align: center; outline: none;
+}
+.config-input:focus { border-color: #4a9eff; }
+.btn-config {
+  padding: 12px 20px; background: #1a2a3a; color: #9ab4d4;
+  border: 1px solid #1e3a5a; border-radius: 10px; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: background 0.15s;
+}
+.btn-config:hover { background: #1e3248; }
+.btn-danger {
+  padding: 12px 20px; background: #1e0f0f; color: #c07070;
+  border: 1px solid #3a1a1a; border-radius: 10px; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: background 0.15s; width: 100%;
+}
+.btn-danger:hover { background: #2a1212; }
+
+/* Menu editor styles */
+.menu-cat-group { margin-bottom: 24px; }
+.menu-cat-title {
+  font-size: 13px; font-weight: 600; color: #888;
+  margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.menu-item-row {
+  display: flex; align-items: center; gap: 8px;
+  background: #1a1a1a; border: 1px solid #1e1e1e; border-radius: 10px;
+  padding: 8px 12px; margin-bottom: 7px;
+  min-height: 48px;
+}
+.menu-item-row input {
+  background: transparent; border: none; color: #ddd; font-size: 14px;
+  outline: none; flex: 1; min-width: 0;
+}
+.menu-item-row input.price {
+  width: 60px; text-align: right; color: #aaa; font-size: 14px;
+  flex: 0 0 auto;
+}
+.menu-item-row .variantes-tag {
+  font-size: 10px; color: #555; background: #111; padding: 2px 6px;
+  border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+}
+.btn-menu-edit, .btn-menu-delete {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid #2a2a2a; background: #1a1a1a;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0; line-height: 1;
+}
+.btn-menu-edit { color: #777; }
+.btn-menu-edit:hover { background: #222; color: #aaa; border-color: #3a3a3a; }
+.btn-menu-delete { color: #884444; }
+.btn-menu-delete:hover { background: #2a1515; color: #cc5555; border-color: #4a2222; }
+.btn-add-item {
+  width: 100%; padding: 10px; background: #161616; color: #666;
+  border: 1px dashed #2a2a2a; border-radius: 10px; font-size: 13px;
+  font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 4px;
+}
+.btn-add-item:hover { background: #1a1a1a; color: #888; border-color: #3a3a3a; }
+
+/* Variants editor */
+.variants-editor {
+  background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 10px;
+  padding: 12px; margin-top: 8px; display: none;
+}
+.variants-editor.active { display: block; }
+.variants-editor h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: #555; margin-bottom: 8px; font-weight: 600;
+}
+.variant-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.variant-row input {
+  background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px;
+  color: #ddd; font-size: 13px; padding: 6px 10px; outline: none;
+}
+.variant-row input.name { flex: 1; }
+.variant-row input.price { width: 70px; text-align: right; }
+.btn-variant-delete {
+  width: 24px; height: 24px; border-radius: 5px;
+  border: 1px solid #2a1a1a; background: #1a0f0f;
+  color: #884444; font-size: 10px; font-weight: 600;
+  cursor: pointer; padding: 0; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.btn-variant-delete:hover {
+  background: #2a1515; color: #cc5555; border-color: #4a2222;
+}
+.btn-add-variant {
+  padding: 6px 12px; background: #1a1a1a; color: #666;
+  border: 1px dashed #2a2a2a; border-radius: 6px; font-size: 12px;
+  cursor: pointer; margin-top: 4px;
+}
+.btn-add-variant:hover { background: #222; color: #888; }
+
+/* Modal for variant selection */
+.variant-selector-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  display: none; align-items: center; justify-content: center; z-index: 150;
+}
+.variant-selector-overlay.active { display: flex; }
+.variant-selector {
+  background: #141414; border: 1px solid #2a2a2a; border-radius: 16px;
+  width: 90%; max-width: 360px; padding: 20px;
+}
+.variant-selector h3 {
+  font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px;
+}
+.variant-selector .variant-subtitle {
+  font-size: 13px; color: #666; margin-bottom: 16px;
+}
+.variant-option {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; background: #1a1a1a; border-radius: 10px;
+  margin-bottom: 8px; cursor: pointer; border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.variant-option:hover { background: #222; border-color: #3a3a3a; }
+.variant-option .variant-name { font-size: 14px; color: #ddd; }
+.variant-option .variant-price { font-size: 13px; color: #888; }
+.variant-option.selected { border-color: #2d4a2d; background: #192019; }
+.variant-option.selected .variant-name { color: #7ec87e; }
+
+/* Item sizing fix */
+.item-info {
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 34px;
+}
+.item-variantes {
+  font-size: 10px; color: #444; margin-top: 2px; min-height: 14px;
+}
+
+/* CONFIRM SHEET */
+.confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: none; align-items: flex-end; justify-content: center; z-index: 200;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+  background: #161616; border: 1px solid #2a2a2a;
+  border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+  padding: 24px 20px 36px;
+}
+.confirm-titulo { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+.confirm-msg { font-size: 14px; color: #777; margin-bottom: 22px; line-height: 1.5; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns button {
+  flex: 1; padding: 14px; border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn-cfm-no {
+  background: #1a1a1a; color: #888;
+  border: 1px solid #2a2a2a;
+}
+.btn-cfm-yes {
+  background: #2a5a2a; color: #a8e6a8;
+  border: 1px solid #3a7a3a;
+}
+.btn-cfm-yes:hover { background: #326832; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #252525; color: #ccc; padding: 10px 22px;
+  border-radius: 20px; font-size: 14px; z-index: 300;
+  opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  white-space: nowrap; border: 1px solid #333; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty-state {
+  text-align: center; padding: 50px 20px;
+  color: #444; font-size: 15px;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" data-tab="pedir" onclick="switchTab('pedir')">Pedir</button>
+    <button class="tab" data-tab="servir" onclick="switchTab('servir')">
+      Servir<span class="tab-badge" id="badgeTab"></span>
+    </button>
+    <button class="tab" data-tab="tickets" onclick="switchTab('tickets')">Tickets</button>
+    <button class="tab" data-tab="config" onclick="switchTab('config')">Config</button>
+  </div>
+
+  <div class="content">
+    <!-- PEDIR -->
+    <div id="pedir" class="section active">
+      <div class="mesas-grid" id="mesasGrid"></div>
+    </div>
+
+    <!-- SERVIR -->
+    <div id="servir" class="section">
+      <div class="subtabs">
+        <button class="subtab active" data-sub="pendientes" onclick="switchSubtab('pendientes')">
+          Pendientes<span class="sub-badge" id="badgeSub"></span>
+        </button>
+        <button class="subtab" data-sub="historial" onclick="switchSubtab('historial')">Hoy</button>
+      </div>
+      <div id="listaPendientes"></div>
+      <div id="listaHistorial" style="display:none"></div>
+    </div>
+
+    <!-- TICKETS -->
+    <div id="tickets" class="section">
+      <div class="cal-header">
+        <h2 id="fechaTickets"></h2>
+        <div class="cal-nav">
+          <button onclick="cambiarDia(-1)">‹</button>
+          <button onclick="irHoy()">Hoy</button>
+          <button onclick="cambiarDia(1)">›</button>
+        </div>
+      </div>
+      <div class="resumen-dia" id="resumenDia"></div>
+      <div class="tickets-list" id="listaTickets"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="config" class="section">
+      <div class="config-group">
+        <div class="config-label">Número de mesas</div>
+        <div class="config-row">
+          <input class="config-input" type="number" id="inputMesas" min="1" max="200">
+          <button class="btn-config" onclick="guardarConfig()">Guardar</button>
+        </div>
+      </div>
+      <div class="config-group">
+        <div class="config-label">Menú del bar</div>
+        <div id="menuEditor"></div>
+      </div>
+      <div class="config-group">
+        <div class="config-label">Notificaciones</div>
+        <div id="notificacionesConfig"></div>
+      </div>
+      <div class="config-group">
+        <div class="config-label">Peligro</div>
+        <button class="btn-danger" onclick="pedirLimpiar()">Borrar todos los datos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pedido -->
+<div class="modal-overlay" id="modalOverlay" onclick="overlayClick(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <h2 id="modalTitle">Mesa 1</h2>
+      <button class="close-btn" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <div class="total-line">
+        <span>Añadir al pedido</span>
+        <span id="modalTotal">0,00 €</span>
+      </div>
+      <button class="btn-primary" id="btnConfirmar" onclick="confirmarPedido()" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Variant selector -->
+<div class="variant-selector-overlay" id="variantOverlay" onclick="variantOverlayClick(event)">
+  <div class="variant-selector" id="variantBox">
+    <h3 id="variantTitle">Seleccionar variante</h3>
+    <div class="variant-subtitle" id="variantSubtitle"></div>
+    <div id="variantOptions"></div>
+  </div>
+</div>
+
+<!-- Confirm sheet -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-titulo" id="confirmTitulo"></div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="btn-cfm-no" onclick="cerrarConfirm()">Cancelar</button>
+      <button class="btn-cfm-yes" id="btnCfmSi">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== DATOS / CONFIG ==========
+const defaultMenu = {
+  bebidas: [
+    { id: 'b1', nombre: 'Cerveza', precio: 2.50, variantes: [] },
+    { id: 'b2', nombre: 'Coca-Cola', precio: 2.00, variantes: [
+      { nombre: 'Normal', precio: 2.00 },
+      { nombre: 'Zero', precio: 2.00 },
+      { nombre: 'Sin azúcar', precio: 2.00 },
+      { nombre: 'Light', precio: 2.00 }
+    ]},
+    { id: 'b3', nombre: 'Agua', precio: 1.50, variantes: [
+      { nombre: 'Sin gas', precio: 1.50 },
+      { nombre: 'Con gas', precio: 1.80 }
+    ]},
+    { id: 'b4', nombre: 'Vino tinto', precio: 3.00, variantes: [] },
+    { id: 'b5', nombre: 'Vino blanco', precio: 3.00, variantes: [] },
+    { id: 'b6', nombre: 'Café', precio: 1.80, variantes: [
+      { nombre: 'Solo', precio: 1.80 },
+      { nombre: 'Con leche', precio: 2.00 },
+      { nombre: 'Cortado', precio: 1.90 },
+      { nombre: 'Descafeinado', precio: 1.90 }
+    ]},
+    { id: 'b7', nombre: 'Zumo naranja', precio: 2.20, variantes: [] },
+    { id: 'b8', nombre: 'Tónica', precio: 2.00, variantes: [
+      { nombre: 'Normal', precio: 2.00 },
+      { nombre: 'Zero', precio: 2.00 }
+    ]},
+  ],
+  comidas: [
+    { id: 'c1', nombre: 'Patatas bravas', precio: 5.50, variantes: [] },
+    { id: 'c2', nombre: 'Croquetas', precio: 6.00, variantes: [
+      { nombre: 'Jamón', precio: 6.00 },
+      { nombre: 'Pollo', precio: 6.00 },
+      { nombre: 'Bacalao', precio: 6.50 },
+      { nombre: 'Setas', precio: 6.50 }
+    ]},
+    { id: 'c3', nombre: 'Tortilla', precio: 7.00, variantes: [
+      { nombre: 'Normal', precio: 7.00 },
+      { nombre: 'Con cebolla', precio: 7.50 }
+    ]},
+    { id: 'c4', nombre: 'Calamares', precio: 8.50, variantes: [] },
+    { id: 'c5', nombre: 'Ensalada', precio: 6.50, variantes: [] },
+    { id: 'c6', nombre: 'Hamburguesa', precio: 9.00, variantes: [
+      { nombre: 'Normal', precio: 9.00 },
+      { nombre: 'Doble', precio: 11.00 },
+      { nombre: 'Vegana', precio: 9.50 }
+    ]},
+    { id: 'c7', nombre: 'Sandwich', precio: 5.00, variantes: [] },
+    { id: 'c8', nombre: 'Nachos', precio: 6.00, variantes: [] },
+  ],
+  postres: [
+    { id: 'p1', nombre: 'Tarta queso', precio: 4.50, variantes: [] },
+    { id: 'p2', nombre: 'Flan', precio: 3.50, variantes: [] },
+    { id: 'p3', nombre: 'Helado', precio: 3.00, variantes: [
+      { nombre: 'Vainilla', precio: 3.00 },
+      { nombre: 'Chocolate', precio: 3.00 },
+      { nombre: 'Fresa', precio: 3.00 },
+      { nombre: 'Menta', precio: 3.00 }
+    ]},
+    { id: 'p4', nombre: 'Fruta', precio: 2.50, variantes: [] },
+  ]
+};
+
+let menu;
+try {
+  menu = JSON.parse(localStorage.getItem('bar_menu') || JSON.stringify(defaultMenu));
+} catch (e) {
+  menu = JSON.parse(JSON.stringify(defaultMenu));
+  toast('Menú corrupto, restaurado por defecto');
+}
+
+function getMenuFlat() {
+  return Object.values(menu).flat();
+}
+
+// Estado
+let numMesas;
+try {
+  numMesas = parseInt(localStorage.getItem('bar_num_mesas') || '30');
+} catch (e) {
+  numMesas = 30;
+}
+
+let pedidos;
+try {
+  pedidos = JSON.parse(localStorage.getItem('bar_pedidos') || '[]');
+} catch (e) {
+  pedidos = [];
+  toast('Pedidos corruptos, reiniciados');
+}
+
+let tickets;
+try {
+  tickets = JSON.parse(localStorage.getItem('bar_tickets') || '{}');
+} catch (e) {
+  tickets = {};
+  toast('Tickets corruptos, reiniciados');
+}
+let mesaActual = null;
+let carrito    = {};
+let fechaTickets  = new Date();
+let subtabActivo  = 'pendientes';
+let confirmCb     = null;
+let refreshTimer  = null;
+let variantCallback = null;
+
+// ========== PERSISTENCIA ==========
+function guardar() {
+  try {
+    localStorage.setItem('bar_menu',      JSON.stringify(menu));
+    localStorage.setItem('bar_pedidos',   JSON.stringify(pedidos));
+    localStorage.setItem('bar_tickets',   JSON.stringify(tickets));
+  } catch (e) {
+    toast('Error al guardar: almacenamiento lleno');
+    console.error('guardar error:', e);
+  }
+}
+
+// ========== UTILS ==========
+function fFecha(d)  { return d.toISOString().split('T')[0]; }
+function fHora(d)   { return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
+function fEuros(n)  { return n.toFixed(2).replace('.', ',') + ' €'; }
+
+function tiempoDesde(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '--';
+  const m = Math.floor((Date.now() - d) / 60000);
+  if (m < 1)  return '< 1 min';
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + 'h' + (r ? ' ' + r + 'm' : '');
+}
+
+function colorTiempo(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '#555';
+  const m = Math.floor((Date.now() - d) / 60000);
+  if (m < 10) return '#7ec87e';
+  if (m < 20) return '#d4c49a';
+  return '#e08080';
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ========== VARIANT SELECTOR ==========
+function variantOverlayClick(e) {
+  if (e.target === document.getElementById('variantOverlay')) cerrarVariantSelector();
+}
+
+function cerrarVariantSelector() {
+  document.getElementById('variantOverlay').classList.remove('active');
+  variantCallback = null;
+}
+
+function seleccionarVariante(itemId, delta) {
+  const item = getMenuFlat().find(i => i.id === itemId);
+  if (!item || !item.variantes || item.variantes.length === 0) {
+    ajustarDirecto(itemId, null, delta);
+    return;
+  }
+
+  document.getElementById('variantTitle').textContent = item.nombre;
+  document.getElementById('variantSubtitle').textContent = 'Selecciona una variante';
+  const opts = document.getElementById('variantOptions');
+  opts.innerHTML = '';
+
+  for (const v of item.variantes) {
+    const div = document.createElement('div');
+    div.className = 'variant-option';
+    div.innerHTML = `<span class="variant-name">${v.nombre}</span><span class="variant-price">${fEuros(v.precio)}</span>`;
+    div.onclick = () => {
+      ajustarDirecto(itemId, v.nombre, delta);
+      cerrarVariantSelector();
+    };
+    opts.appendChild(div);
+  }
+
+  document.getElementById('variantOverlay').classList.add('active');
+}
+
+function ajustarDirecto(itemId, variante, delta) {
+  const key = variante ? itemId + '|' + variante : itemId;
+  const prev = carrito[key] || 0;
+  const next = Math.max(0, prev + delta);
+  if (next === 0) delete carrito[key]; else carrito[key] = next;
+
+  const el = document.getElementById('cant-' + itemId);
+  if (el) {
+    let totalCant = 0;
+    for (const [k, v] of Object.entries(carrito)) {
+      if (k === itemId || k.startsWith(itemId + '|')) totalCant += v;
+    }
+    el.textContent = totalCant || '';
+    const row = el.closest('.item');
+    if (row) row.className = 'item' + (totalCant > 0 ? ' activo' : '');
+  }
+
+  let total = 0;
+  const flat = getMenuFlat();
+  for (const [k, cant] of Object.entries(carrito)) {
+    const [id, varName] = k.split('|');
+    const it = flat.find(i => i.id === id);
+    if (!it) continue;
+    if (varName && it.variantes) {
+      const v = it.variantes.find(v => v.nombre === varName);
+      if (v) total += v.precio * cant;
+      else total += it.precio * cant;
+    } else {
+      total += it.precio * cant;
+    }
+  }
+  document.getElementById('modalTotal').textContent = fEuros(total);
+  document.getElementById('btnConfirmar').disabled  = total === 0;
+}
+
+// ========== CONFIRM SHEET ==========
+function confirmar(titulo, msg, labelSi, cb) {
+  document.getElementById('confirmTitulo').textContent = titulo;
+  document.getElementById('confirmMsg').textContent    = msg;
+  document.getElementById('btnCfmSi').textContent      = labelSi;
+  confirmCb = cb;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+function cerrarConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+  confirmCb = null;
+}
+document.getElementById('btnCfmSi').onclick = () => {
+  const cb = confirmCb;
+  cerrarConfirm();
+  if (cb) cb();
+};
+
+// ========== TABS ==========
+function switchTab(tab) {
+  // Cerrar todos los overlays al cambiar de pestaña
+  cerrarModal();
+  cerrarVariantSelector();
+  cerrarConfirm();
+
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab)
+  );
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+
+  clearInterval(refreshTimer);
+  if (tab === 'pedir')   renderMesas();
+  if (tab === 'servir')  { renderServir(); refreshTimer = setInterval(renderServir, 30000); }
+  if (tab === 'tickets') renderTickets();
+  if (tab === 'config')  renderConfig();
+}
+
+function switchSubtab(sub) {
+  subtabActivo = sub;
+  document.querySelectorAll('.subtab').forEach(t =>
+    t.classList.toggle('active', t.dataset.sub === sub)
+  );
+  document.getElementById('listaPendientes').style.display = sub === 'pendientes' ? 'block' : 'none';
+  document.getElementById('listaHistorial').style.display  = sub === 'historial'  ? 'block' : 'none';
+  renderServir();
+}
+
+function actualizarBadges() {
+  const n = pedidos.filter(p => !p.entregado).length;
+  const bt = document.getElementById('badgeTab');
+  const bs = document.getElementById('badgeSub');
+  if (n > 0) {
+    bt.textContent = n; bt.style.display = 'flex';
+    bs.textContent = n; bs.style.display = 'flex';
+  } else {
+    bt.style.display = 'none';
+    bs.style.display = 'none';
+  }
+}
+
+// ========== PEDIR (MESAS) ==========
+function renderMesas() {
+  const grid = document.getElementById('mesasGrid');
+  grid.innerHTML = '';
+  const porMesa = {};
+  for (const p of pedidos.filter(p => !p.entregado)) porMesa[p.mesa] = p;
+
+  for (let i = 1; i <= numMesas; i++) {
+    const p = porMesa[i];
+    const div = document.createElement('div');
+    div.className = 'mesa' + (p ? ' ocupada' : '');
+    div.innerHTML = `<span class="mesa-num">${i}</span>` +
+      (p ? `<span class="mesa-subtotal">${fEuros(p.total)}</span>` : '');
+    div.onclick = () => abrirMesa(i);
+    grid.appendChild(div);
+  }
+  actualizarBadges();
+}
+
+function abrirMesa(mesa) {
+  mesaActual = mesa;
+  carrito    = {};
+  document.getElementById('modalTitle').textContent = 'Mesa ' + mesa;
+  document.getElementById('modalOverlay').classList.add('active');
+  renderModal();
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) cerrarModal();
+}
+
+function cerrarModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  mesaActual = null;
+  carrito    = {};
+}
+
+function renderModal() {
+  const body    = document.getElementById('modalBody');
+  const scrollY = body.scrollTop;
+  body.innerHTML = '';
+
+  // Mostrar pedido existente si lo hay
+  const yaP = pedidos.find(p => p.mesa === mesaActual && !p.entregado);
+  if (yaP) {
+    const sec = document.createElement('div');
+    sec.className = 'ya-pedido';
+    sec.innerHTML = `<div class="ya-pedido-titulo">Ya pedido · ${fEuros(yaP.total)}</div>`;
+    yaP.items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'ya-pedido-item';
+      const varText = it.variante ? ' (' + it.variante + ')' : '';
+      row.innerHTML = `<span>${it.cantidad}× ${it.nombre}${varText}</span><span>${fEuros(it.precio * it.cantidad)}</span>`;
+      sec.appendChild(row);
+    });
+    body.appendChild(sec);
+  }
+
+  // Categorías del menú
+  let total = 0;
+  for (const [cat, items] of Object.entries(menu)) {
+    const catDiv  = document.createElement('div');
+    catDiv.className = 'categoria';
+    const nombres = { bebidas: 'Bebidas', comidas: 'Comidas', postres: 'Postres' };
+    catDiv.innerHTML = `<h3>${nombres[cat]}</h3>`;
+
+    for (const item of items) {
+      let totalCant = 0;
+      for (const [k, v] of Object.entries(carrito)) {
+        if (k === item.id || k.startsWith(item.id + '|')) totalCant += v;
+      }
+
+      const row  = document.createElement('div');
+      row.className = 'item' + (totalCant > 0 ? ' activo' : '');
+      const hasVariants = item.variantes && item.variantes.length > 0;
+      const variantTag = `<div class="item-variantes">${hasVariants ? item.variantes.map(v => v.nombre).join(', ') : ''}</div>`;
+
+      row.innerHTML = `
+        <div class="item-info">
+          <div class="item-nombre">${item.nombre}</div>
+          <div class="item-precio">${fEuros(item.precio)}</div>
+          ${variantTag}
+        </div>
+        <div class="item-controls">
+          <button class="btn-cant" onclick="seleccionarVariante('${item.id}', -1)">−</button>
+          <span class="cantidad" id="cant-${item.id}">${totalCant || ''}</span>
+          <button class="btn-cant" onclick="seleccionarVariante('${item.id}', 1)">+</button>
+        </div>`;
+      catDiv.appendChild(row);
+
+      for (const [k, cant] of Object.entries(carrito)) {
+        const [id, varName] = k.split('|');
+        if (id !== item.id) continue;
+        if (varName && item.variantes) {
+          const v = item.variantes.find(v => v.nombre === varName);
+          if (v) total += v.precio * cant;
+          else total += item.precio * cant;
+        } else {
+          total += item.precio * cant;
+        }
+      }
+    }
+    body.appendChild(catDiv);
+  }
+
+  document.getElementById('modalTotal').textContent  = fEuros(total);
+  document.getElementById('btnConfirmar').disabled   = total === 0;
+  body.scrollTop = scrollY;
+}
+
+
+
+function confirmarPedido() {
+  const items = [];
+  let total   = 0;
+  getMenuFlat().forEach(item => {
+    const c = carrito[item.id] || 0;
+    if (c > 0) { items.push({ ...item, cantidad: c }); total += item.precio * c; }
+  });
+
+  const existente = pedidos.find(p => p.mesa === mesaActual && !p.entregado);
+  if (existente) {
+    // FIX: no sobreescribir hora original
+    for (const it of items) {
+      const prev = existente.items.find(i => i.id === it.id);
+      if (prev) prev.cantidad += it.cantidad;
+      else existente.items.push(it);
+    }
+    existente.total      = existente.items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    existente.actualizado = new Date().toISOString();
+  } else {
+    pedidos.push({
+      id: Date.now(), mesa: mesaActual,
+      items, total, hora: new Date().toISOString(),
+      entregado: false, pagado: false, metodoPago: null
+    });
+  }
+
+  const mesaGuardada = mesaActual;
+  guardar();
+  cerrarModal();
+  renderMesas();
+  toast('Pedido mesa ' + mesaGuardada + ' ✓');
+
+  // Notificar
+  if (notificacionesActivas()) {
+    notificar('Nuevo pedido - Mesa ' + mesaGuardada, 
+      items.map(i => i.cantidad + 'x ' + i.nombre + (i.variante ? ' (' + i.variante + ')' : '')).join(', ')
+    );
+  }
+
+function pedirCobrar(id, metodo) {
+  const p = pedidos.find(p => p.id === id);
+  if (!p) return;
+  confirmar(
+    'Cobrar mesa ' + p.mesa,
+    `${fEuros(p.total)} en ${metodo}. ¿Confirmar cobro?`,
+    'Cobrar',
+    () => finalizar(id, metodo)
+  );
+}
+
+function pedirCancelar(id) {
+  const p = pedidos.find(p => p.id === id);
+  if (!p) return;
+  confirmar(
+    'Cancelar pedido',
+    `¿Cancelar el pedido de mesa ${p.mesa}? No quedará en el historial.`,
+    'Cancelar pedido',
+    () => cancelarPedido(id)
+  );
+}
+
+function finalizar(id, metodo) {
+  // FIX: eliminar del array pedidos en lugar de solo marcar entregado
+  const idx = pedidos.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const p = { ...pedidos[idx], entregado: true, pagado: true, metodoPago: metodo };
+  pedidos.splice(idx, 1);
+  const fecha = fFecha(new Date());
+  if (!tickets[fecha]) tickets[fecha] = [];
+  tickets[fecha].push(p);
+  guardar();
+  renderServir();
+  renderMesas();
+  toast('Mesa ' + p.mesa + ' cobrada ✓');
+
+  if (notificacionesActivas()) {
+    notificar('Mesa ' + p.mesa + ' cobrada', 
+      fEuros(p.total) + ' por ' + (p.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'));
+  }
+
+function cancelarPedido(id) {
+  const idx = pedidos.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const mesa = pedidos[idx].mesa;
+  pedidos.splice(idx, 1);
+  guardar();
+
+
+  // Si el modal está abierto para la mesa cancelada, cerrarlo
+  if (mesaActual === mesa) {
+    cerrarModal();
+    cerrarVariantSelector();
+  }
+
+  renderServir();
+  renderMesas();
+  toast('Pedido mesa ' + mesa + ' cancelado');
+}
+
+// ========== TICKETS ==========
+function renderTickets() {
+  const fechaStr = fFecha(fechaTickets);
+  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('fechaTickets').textContent =
+    fechaTickets.toLocaleDateString('es-ES', opciones);
+
+  const lista = tickets[fechaStr] || [];
+  const cont  = document.getElementById('listaTickets');
+  const res   = document.getElementById('resumenDia');
+
+  const totalDia      = lista.reduce((s, t) => s + t.total, 0);
+  const totalEfectivo = lista.filter(t => t.metodoPago === 'efectivo').reduce((s, t) => s + t.total, 0);
+  const totalTarjeta  = lista.filter(t => t.metodoPago === 'tarjeta').reduce((s, t) => s + t.total, 0);
+
+  res.innerHTML = `
+    <div class="resumen-item"><div class="resumen-val">${lista.length}</div><div class="resumen-label">Tickets</div></div>
+    <div class="resumen-item"><div class="resumen-val">${fEuros(totalDia)}</div><div class="resumen-label">Total</div></div>
+    <div class="resumen-item"><div class="resumen-val">${fEuros(totalEfectivo)}</div><div class="resumen-label">Efectivo</div></div>
+    <div class="resumen-item"><div class="resumen-val">${fEuros(totalTarjeta)}</div><div class="resumen-label">Tarjeta</div></div>`;
+
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty-state">Sin tickets para este día</div>';
+    return;
+  }
+  cont.innerHTML = '';
+  for (const t of [...lista].reverse()) {
+    const div = document.createElement('div');
+    div.className = 'ticket';
+    const itemsHtml = t.items.map(i => {
+      const varText = i.variante ? ' (' + i.variante + ')' : '';
+      return `<div class="ticket-item">
+        <span>${i.cantidad}× ${i.nombre}${varText}</span>
+        <span>${fEuros(i.precio * i.cantidad)}</span>
+      </div>`;
+    }).join('');
+    div.innerHTML = `
+      <div class="ticket-top">
+        <span class="ticket-mesa">Mesa ${t.mesa}</span>
+        <span class="ticket-hora">${fHora(new Date(t.hora))}</span>
+      </div>
+      <div class="ticket-items">${itemsHtml}</div>
+      <div class="ticket-bottom">
+        <span class="ticket-pago ${t.metodoPago}">${t.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</span>
+        <span class="ticket-total">${fEuros(t.total)}</span>
+      </div>`;
+    cont.appendChild(div);
+  }
+}
+
+function cambiarDia(delta) {
+  const d = new Date(fechaTickets);
+  if (isNaN(d)) { fechaTickets = new Date(); renderTickets(); return; }
+  d.setDate(d.getDate() + delta);
+  fechaTickets = d;
+  renderTickets();
+}
+
+function irHoy() {
+  fechaTickets = new Date();
+  renderTickets();
+}
+
+// ========== CONFIG ==========
+function renderConfig() {
+  document.getElementById('inputMesas').value = numMesas;
+  renderMenuEditor();
+
+  // Notificaciones config
+  const notifDiv = document.getElementById('notificacionesConfig');
+
+  if (!('Notification' in window)) {
+    notifDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#555;"></div>
+        <span style="font-size:14px;color:#888;">No soportado en este dispositivo</span>
+      </div>`;
+  } else if (Notification.permission === 'granted') {
+    const activas = localStorage.getItem('bar_notificaciones') === '1';
+    notifDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${activas ? '#5a9a5a' : '#555'};"></div>
+        <span style="font-size:14px;color:${activas ? '#7ec87e' : '#888'};">${activas ? 'Activadas' : 'Desactivadas'}</span>
+      </div>
+      <button class="btn-config" onclick="toggleNotificaciones()">${activas ? 'Desactivar' : 'Activar'} notificaciones</button>`;
+  } else if (Notification.permission === 'denied') {
+    notifDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#e05050;"></div>
+        <span style="font-size:14px;color:#e08080;">Bloqueadas por el navegador</span>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;">
+        Ve a Ajustes del navegador → Permisos → Notificaciones → Permitir
+      </div>`;
+  } else {
+    // permission === 'default' (no se ha preguntado aún)
+    notifDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#d4c49a;"></div>
+        <span style="font-size:14px;color:#d4c49a;">Pendiente de permiso</span>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;">
+        La app te pedirá permiso para enviar notificaciones del sistema
+      </div>
+      <button class="btn-config" onclick="pedirPermisoNotificaciones()">Permitir notificaciones</button>`;
+  }`;
+}
+
+function toggleNotificaciones() {
+  const actual = localStorage.getItem('bar_notificaciones') === '1';
+  if (actual) {
+    localStorage.setItem('bar_notificaciones', '0');
+    toast('Notificaciones desactivadas');
+    renderConfig();
+  } else {
+    pedirPermisoNotificaciones();
+  }
+}
+
+function notificar(titulo, mensaje, opciones) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  try {
+    new Notification(titulo, {
+      body: mensaje,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍺</text></svg>',
+      tag: opciones?.tag || 'barapp',
+      requireInteraction: opciones?.persistente || false,
+      vibrate: opciones?.vibrar !== false ? [200, 100, 200] : []
+    });
+  } catch(e) {}
+}
+
+function pedirPermisoNotificaciones() {
+  if (!('Notification' in window)) {
+    toast('Notificaciones no soportadas en este dispositivo');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    localStorage.setItem('bar_notificaciones', '1');
+    toast('Notificaciones activadas');
+    renderConfig();
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    toast('Permiso bloqueado. Ve a Ajustes del navegador → Notificaciones');
+    return;
+  }
+
+  Notification.requestPermission().then((perm) => {
+    if (perm === 'granted') {
+      localStorage.setItem('bar_notificaciones', '1');
+      toast('Notificaciones activadas');
+      // Enviar notificación de prueba
+      notificar('BarApp', 'Notificaciones activadas correctamente');
+    } else {
+      localStorage.setItem('bar_notificaciones', '0');
+      toast('Permiso denegado');
+    }
+    renderConfig();
+  });
+}
+
+function notificacionesActivas() {
+  return localStorage.getItem('bar_notificaciones') === '1' && Notification.permission === 'granted';
+}
+
+function mostrarBanner(titulo, mensaje) {
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position: fixed; top: 10px; left: 10px; right: 10px;
+    background: #1a2a1a; border: 1px solid #3a5a3a; border-radius: 12px;
+    padding: 14px 18px; z-index: 400; color: #a8e6a8;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    animation: slideDown 0.3s ease;
+  `;
+  banner.innerHTML = `
+    <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">${titulo}</div>
+    <div style="font-size: 13px; color: #7ec87e;">${mensaje}</div>
+  `;
+
+  const close = document.createElement('button');
+  close.textContent = '×';
+  close.style.cssText = `
+    position: absolute; top: 8px; right: 12px;
+    background: none; border: none; color: #5a9a5a;
+    font-size: 20px; cursor: pointer; padding: 0;
+  `;
+  close.onclick = () => banner.remove();
+  banner.appendChild(close);
+
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 4000);
+}
+
+function renderMenuEditor() {
+  const container = document.getElementById('menuEditor');
+  container.innerHTML = '';
+
+  const nombres = { bebidas: 'Bebidas', comidas: 'Comidas', postres: 'Postres' };
+
+  for (const [cat, items] of Object.entries(menu)) {
+    const group = document.createElement('div');
+    group.className = 'menu-cat-group';
+
+    const title = document.createElement('div');
+    title.className = 'menu-cat-title';
+    title.textContent = nombres[cat];
+    group.appendChild(title);
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const row = document.createElement('div');
+      row.className = 'menu-item-row';
+
+      const hasVariants = item.variantes && item.variantes.length > 0;
+      const varTag = hasVariants 
+        ? `<span class="variantes-tag">${item.variantes.length} variantes</span>` 
+        : '';
+
+      row.innerHTML = `
+        <input type="text" value="${item.nombre}" onchange="editarItemNombre('${cat}', ${i}, this.value)" placeholder="Nombre">
+        <input type="number" class="price" value="${item.precio.toFixed(2)}" step="0.01" min="0" onchange="editarItemPrecio('${cat}', ${i}, this.value)">
+        ${varTag}
+        <button class="btn-menu-edit" onclick="toggleVariantesEditor('${cat}', ${i})" title="Variantes">V</button>
+        <button class="btn-menu-delete" onclick="eliminarItem('${cat}', ${i})" title="Eliminar">X</button>
+      `;
+      group.appendChild(row);
+
+      // Variants editor
+      const varEditor = document.createElement('div');
+      varEditor.className = 'variants-editor';
+      varEditor.id = `variants-${cat}-${i}`;
+      varEditor.innerHTML = `
+        <h4>Variantes de ${item.nombre}</h4>
+        <div id="variant-list-${cat}-${i}"></div>
+        <button class="btn-add-variant" onclick="agregarVariante('${cat}', ${i})">+ Añadir variante</button>
+      `;
+      group.appendChild(varEditor);
+    }
+
+    const btnAdd = document.createElement('button');
+    btnAdd.className = 'btn-add-item';
+    btnAdd.textContent = '+ Añadir ' + nombres[cat].toLowerCase().slice(0, -1);
+    btnAdd.onclick = () => agregarItem(cat);
+    group.appendChild(btnAdd);
+
+    container.appendChild(group);
+  }
+}
+
+function editarItemNombre(cat, idx, nombre) {
+  const val = nombre.trim();
+  menu[cat][idx].nombre = val || menu[cat][idx].nombre || 'Sin nombre';
+  guardar();
+}
+
+function editarItemPrecio(cat, idx, precio) {
+  const val = parseFloat(precio);
+  menu[cat][idx].precio = (val >= 0 && !isNaN(val)) ? val : 0;
+  guardar();
+}
+
+function eliminarItem(cat, idx) {
+  confirmar(
+    'Eliminar item',
+    `¿Eliminar "${menu[cat][idx].nombre}" del menú?`,
+    'Eliminar',
+    () => {
+      menu[cat].splice(idx, 1);
+      guardar();
+      renderMenuEditor();
+      toast('Item eliminado');
+    }
+  );
+}
+
+function agregarItem(cat) {
+  const id = (cat[0] + Date.now() + Math.floor(Math.random() * 1000)).replace(/\|/g, '_');
+  menu[cat].push({
+    id: id,
+    nombre: 'Nuevo item',
+    precio: 0,
+    variantes: []
+  });
+  guardar();
+  renderMenuEditor();
+  toast('Item añadido');
+}
+
+function toggleVariantesEditor(cat, idx) {
+  const editor = document.getElementById(`variants-${cat}-${idx}`);
+  const isActive = editor.classList.contains('active');
+
+  document.querySelectorAll('.variants-editor').forEach(e => e.classList.remove('active'));
+
+  if (!isActive) {
+    editor.classList.add('active');
+    renderVariantesList(cat, idx);
+  }
+}
+
+function renderVariantesList(cat, idx) {
+  const item = menu[cat][idx];
+  const list = document.getElementById(`variant-list-${cat}-${idx}`);
+  list.innerHTML = '';
+
+  if (!item.variantes || item.variantes.length === 0) {
+    list.innerHTML = '<div style="color:#444;font-size:12px;padding:4px 0;">Sin variantes</div>';
+    return;
+  }
+
+  for (let v = 0; v < item.variantes.length; v++) {
+    const varRow = document.createElement('div');
+    varRow.className = 'variant-row';
+    varRow.innerHTML = `
+      <input type="text" class="name" value="${item.variantes[v].nombre}" onchange="editarVariante('${cat}', ${idx}, ${v}, 'nombre', this.value)" placeholder="Nombre">
+      <input type="number" class="price" value="${item.variantes[v].precio.toFixed(2)}" step="0.01" min="0" onchange="editarVariante('${cat}', ${idx}, ${v}, 'precio', this.value)">
+      <button class="btn-variant-delete" onclick="eliminarVariante('${cat}', ${idx}, ${v})" title="Eliminar">X</button>
+    `;
+    list.appendChild(varRow);
+  }
+}
+
+function editarVariante(cat, idx, vIdx, campo, valor) {
+  if (campo === 'precio') {
+    const val = parseFloat(valor);
+    menu[cat][idx].variantes[vIdx][campo] = (val >= 0 && !isNaN(val)) ? val : 0;
+  } else {
+    const val = valor.trim();
+    menu[cat][idx].variantes[vIdx][campo] = val || menu[cat][idx].variantes[vIdx][campo] || 'Sin nombre';
+  }
+  guardar();
+}
+
+function eliminarVariante(cat, idx, vIdx) {
+  menu[cat][idx].variantes.splice(vIdx, 1);
+  guardar();
+  renderVariantesList(cat, idx);
+  renderMenuEditor();
+}
+
+function agregarVariante(cat, idx) {
+  if (!menu[cat][idx].variantes) menu[cat][idx].variantes = [];
+  menu[cat][idx].variantes.push({
+    nombre: 'Nueva variante',
+    precio: menu[cat][idx].precio
+  });
+  guardar();
+  renderVariantesList(cat, idx);
+  renderMenuEditor();
+}
+
+function guardarConfig() {
+  const val = parseInt(document.getElementById('inputMesas').value);
+  if (!val || val < 1 || val > 200) { toast('Número inválido (1-200)'); return; }
+  numMesas = val;
+  localStorage.setItem('bar_num_mesas', val);
+  toast('Guardado ✓');
+}
+
+function pedirLimpiar() {
+  confirmar(
+    'Borrar todos los datos',
+    'Se eliminarán todos los pedidos activos y el historial de tickets. Esta acción no se puede deshacer.',
+    'Borrar todo',
+    () => {
+      pedidos = []; tickets = {};
+      localStorage.removeItem('bar_pedidos');
+      localStorage.removeItem('bar_tickets');
+      renderMesas();
+      toast('Datos borrados');
+    }
+  );
+}
+
+// ========== INIT ==========
+renderMesas();
+</script>
+</body>
+</html>
