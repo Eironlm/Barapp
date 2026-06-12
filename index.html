@@ -24,10 +24,11 @@ body {
 .tab.active { color: #fff; border-bottom-color: #4a9eff; }
 .tab:hover:not(.active) { color: #999; }
 .tab-badge {
-  position: absolute; top: 7px; right: calc(50% - 18px);
+  display: none;
   background: #e05050; color: #fff; font-size: 9px; font-weight: 700;
   min-width: 15px; height: 15px; border-radius: 8px;
-  display: none; align-items: center; justify-content: center; padding: 0 3px;
+  align-items: center; justify-content: center; padding: 0 4px;
+  margin-left: 6px;
 }
 
 .content { flex: 1; overflow-y: auto; padding: 16px; }
@@ -146,9 +147,11 @@ body {
 .subtab.active { background: #1a1a1a; color: #fff; border-color: #3a3a3a; }
 .subtab:hover:not(.active) { color: #888; }
 .sub-badge {
+  display: none;
   background: #e05050; color: #fff; font-size: 10px; font-weight: 700;
   min-width: 16px; height: 16px; border-radius: 8px;
-  display: none; align-items: center; justify-content: center; padding: 0 3px;
+  align-items: center; justify-content: center; padding: 0 3px;
+  margin-left: 6px;
 }
 
 .pedido-card {
@@ -421,7 +424,7 @@ body {
 <div class="app">
   <div class="tabs">
     <button class="tab active" data-tab="pedir" onclick="switchTab('pedir')">Pedir</button>
-    <button class="tab" data-tab="servir" onclick="switchTab('servir')">
+    <button class="tab" data-tab="servir" onclick="switchTab('servir')" style="display:flex;align-items:center;justify-content:center;">
       Servir<span class="tab-badge" id="badgeTab"></span>
     </button>
     <button class="tab" data-tab="tickets" onclick="switchTab('tickets')">Tickets</button>
@@ -437,7 +440,7 @@ body {
     <!-- SERVIR -->
     <div id="servir" class="section">
       <div class="subtabs">
-        <button class="subtab active" data-sub="pendientes" onclick="switchSubtab('pendientes')">
+        <button class="subtab active" data-sub="pendientes" onclick="switchSubtab('pendientes')" style="display:flex;align-items:center;">
           Pendientes<span class="sub-badge" id="badgeSub"></span>
         </button>
         <button class="subtab" data-sub="historial" onclick="switchSubtab('historial')">Hoy</button>
