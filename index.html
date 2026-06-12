@@ -101,7 +101,6 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 12px; background: #1a1a1a; border-radius: 10px;
   margin-bottom: 7px; border: 1px solid #1e1e1e; transition: border-color 0.15s;
-  min-height: 54px;
 }
 .item.activo { border-color: #2d4a2d; background: #192019; }
 .item-info { flex: 1; }
@@ -256,6 +255,50 @@ body {
 }
 .btn-danger:hover { background: #2a1212; }
 
+/* CONFIRM SHEET */
+.confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: none; align-items: flex-end; justify-content: center; z-index: 200;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+  background: #161616; border: 1px solid #2a2a2a;
+  border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+  padding: 24px 20px 36px;
+}
+.confirm-titulo { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+.confirm-msg { font-size: 14px; color: #777; margin-bottom: 22px; line-height: 1.5; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns button {
+  flex: 1; padding: 14px; border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn-cfm-no {
+  background: #1a1a1a; color: #888;
+  border: 1px solid #2a2a2a;
+}
+.btn-cfm-yes {
+  background: #2a5a2a; color: #a8e6a8;
+  border: 1px solid #3a7a3a;
+}
+.btn-cfm-yes:hover { background: #326832; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #252525; color: #ccc; padding: 10px 22px;
+  border-radius: 20px; font-size: 14px; z-index: 300;
+  opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  white-space: nowrap; border: 1px solid #333; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty-state {
+  text-align: center; padding: 50px 20px;
+  color: #444; font-size: 15px;
+}
+
 /* Menu editor styles */
 .menu-cat-group { margin-bottom: 24px; }
 .menu-cat-title {
@@ -335,7 +378,7 @@ body {
 }
 .btn-add-variant:hover { background: #222; color: #888; }
 
-/* Modal for variant selection */
+/* Variant selector modal */
 .variant-selector-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.9);
   display: none; align-items: center; justify-content: center; z-index: 150;
@@ -360,10 +403,9 @@ body {
 .variant-option:hover { background: #222; border-color: #3a3a3a; }
 .variant-option .variant-name { font-size: 14px; color: #ddd; }
 .variant-option .variant-price { font-size: 13px; color: #888; }
-.variant-option.selected { border-color: #2d4a2d; background: #192019; }
-.variant-option.selected .variant-name { color: #7ec87e; }
 
 /* Item sizing fix */
+.item { min-height: 54px; }
 .item-info {
   display: flex; flex-direction: column; justify-content: center;
   min-height: 34px;
@@ -372,57 +414,8 @@ body {
   font-size: 10px; color: #444; margin-top: 2px; min-height: 14px;
 }
 
-/* CONFIRM SHEET */
-.confirm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  display: none; align-items: flex-end; justify-content: center; z-index: 200;
-}
-.confirm-overlay.active { display: flex; }
-.confirm-box {
-  background: #161616; border: 1px solid #2a2a2a;
-  border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
-  padding: 24px 20px 36px;
-}
-.confirm-titulo { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 6px; }
-.confirm-msg { font-size: 14px; color: #777; margin-bottom: 22px; line-height: 1.5; }
-.confirm-btns { display: flex; gap: 10px; }
-.confirm-btns button {
-  flex: 1; padding: 14px; border-radius: 10px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-}
-.btn-cfm-no {
-  background: #1a1a1a; color: #888;
-  border: 1px solid #2a2a2a;
-}
-.btn-cfm-yes {
-  background: #2a5a2a; color: #a8e6a8;
-  border: 1px solid #3a7a3a;
-}
-.btn-cfm-yes:hover { background: #326832; }
-
-/* TOAST */
-.toast {
-  position: fixed; bottom: 90px; left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: #252525; color: #ccc; padding: 10px 22px;
-  border-radius: 20px; font-size: 14px; z-index: 300;
-  opacity: 0; transition: opacity 0.25s, transform 0.25s;
-  white-space: nowrap; border: 1px solid #333; pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-.empty-state {
-  text-align: center; padding: 50px 20px;
-  color: #444; font-size: 15px;
-}
-
-@keyframes slideDown {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="app">
@@ -603,14 +596,12 @@ try {
   menu = JSON.parse(localStorage.getItem('bar_menu') || JSON.stringify(defaultMenu));
 } catch (e) {
   menu = JSON.parse(JSON.stringify(defaultMenu));
-  toast('Menú corrupto, restaurado por defecto');
 }
 
 function getMenuFlat() {
   return Object.values(menu).flat();
 }
 
-// Estado
 let numMesas;
 try {
   numMesas = parseInt(localStorage.getItem('bar_num_mesas') || '30');
@@ -623,7 +614,6 @@ try {
   pedidos = JSON.parse(localStorage.getItem('bar_pedidos') || '[]');
 } catch (e) {
   pedidos = [];
-  toast('Pedidos corruptos, reiniciados');
 }
 
 let tickets;
@@ -631,8 +621,8 @@ try {
   tickets = JSON.parse(localStorage.getItem('bar_tickets') || '{}');
 } catch (e) {
   tickets = {};
-  toast('Tickets corruptos, reiniciados');
 }
+
 let mesaActual = null;
 let carrito    = {};
 let fechaTickets  = new Date();
@@ -685,6 +675,83 @@ function toast(msg) {
   el._t = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
+// ========== NOTIFICACIONES NATIVAS ==========
+function notificar(titulo, mensaje, opciones) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    new Notification(titulo, {
+      body: mensaje,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍺</text></svg>',
+      tag: opciones?.tag || 'barapp',
+      requireInteraction: opciones?.persistente || false,
+      vibrate: opciones?.vibrar !== false ? [200, 100, 200] : []
+    });
+  } catch(e) {}
+}
+
+function pedirPermisoNotificaciones() {
+  if (!('Notification' in window)) {
+    toast('Notificaciones no soportadas en este dispositivo');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    localStorage.setItem('bar_notificaciones', '1');
+    toast('Notificaciones activadas');
+    notificar('BarApp', 'Notificaciones activadas correctamente');
+    renderConfig();
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    toast('Permiso bloqueado. Ve a Ajustes del navegador');
+    return;
+  }
+  Notification.requestPermission().then((perm) => {
+    if (perm === 'granted') {
+      localStorage.setItem('bar_notificaciones', '1');
+      toast('Notificaciones activadas');
+      notificar('BarApp', 'Notificaciones activadas correctamente');
+    } else {
+      localStorage.setItem('bar_notificaciones', '0');
+      toast('Permiso denegado');
+    }
+    renderConfig();
+  });
+}
+
+function notificacionesActivas() {
+  return localStorage.getItem('bar_notificaciones') === '1' && Notification.permission === 'granted';
+}
+
+function toggleNotificaciones() {
+  const actual = localStorage.getItem('bar_notificaciones') === '1';
+  if (actual) {
+    localStorage.setItem('bar_notificaciones', '0');
+    toast('Notificaciones desactivadas');
+    renderConfig();
+  } else {
+    pedirPermisoNotificaciones();
+  }
+}
+
+// ========== CONFIRM SHEET ==========
+function confirmar(titulo, msg, labelSi, cb) {
+  document.getElementById('confirmTitulo').textContent = titulo;
+  document.getElementById('confirmMsg').textContent    = msg;
+  document.getElementById('btnCfmSi').textContent      = labelSi;
+  confirmCb = cb;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+function cerrarConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+  confirmCb = null;
+}
+document.getElementById('btnCfmSi').onclick = () => {
+  const cb = confirmCb;
+  cerrarConfirm();
+  if (cb) cb();
+};
+
 // ========== VARIANT SELECTOR ==========
 function variantOverlayClick(e) {
   if (e.target === document.getElementById('variantOverlay')) cerrarVariantSelector();
@@ -701,12 +768,10 @@ function seleccionarVariante(itemId, delta) {
     ajustarDirecto(itemId, null, delta);
     return;
   }
-
   document.getElementById('variantTitle').textContent = item.nombre;
   document.getElementById('variantSubtitle').textContent = 'Selecciona una variante';
   const opts = document.getElementById('variantOptions');
   opts.innerHTML = '';
-
   for (const v of item.variantes) {
     const div = document.createElement('div');
     div.className = 'variant-option';
@@ -717,7 +782,6 @@ function seleccionarVariante(itemId, delta) {
     };
     opts.appendChild(div);
   }
-
   document.getElementById('variantOverlay').classList.add('active');
 }
 
@@ -756,37 +820,16 @@ function ajustarDirecto(itemId, variante, delta) {
   document.getElementById('btnConfirmar').disabled  = total === 0;
 }
 
-// ========== CONFIRM SHEET ==========
-function confirmar(titulo, msg, labelSi, cb) {
-  document.getElementById('confirmTitulo').textContent = titulo;
-  document.getElementById('confirmMsg').textContent    = msg;
-  document.getElementById('btnCfmSi').textContent      = labelSi;
-  confirmCb = cb;
-  document.getElementById('confirmOverlay').classList.add('active');
-}
-function cerrarConfirm() {
-  document.getElementById('confirmOverlay').classList.remove('active');
-  confirmCb = null;
-}
-document.getElementById('btnCfmSi').onclick = () => {
-  const cb = confirmCb;
-  cerrarConfirm();
-  if (cb) cb();
-};
-
 // ========== TABS ==========
 function switchTab(tab) {
-  // Cerrar todos los overlays al cambiar de pestaña
   cerrarModal();
   cerrarVariantSelector();
   cerrarConfirm();
-
   document.querySelectorAll('.tab').forEach(t =>
     t.classList.toggle('active', t.dataset.tab === tab)
   );
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
-
   clearInterval(refreshTimer);
   if (tab === 'pedir')   renderMesas();
   if (tab === 'servir')  { renderServir(); refreshTimer = setInterval(renderServir, 30000); }
@@ -823,7 +866,6 @@ function renderMesas() {
   grid.innerHTML = '';
   const porMesa = {};
   for (const p of pedidos.filter(p => !p.entregado)) porMesa[p.mesa] = p;
-
   for (let i = 1; i <= numMesas; i++) {
     const p = porMesa[i];
     const div = document.createElement('div');
@@ -859,7 +901,6 @@ function renderModal() {
   const scrollY = body.scrollTop;
   body.innerHTML = '';
 
-  // Mostrar pedido existente si lo hay
   const yaP = pedidos.find(p => p.mesa === mesaActual && !p.entregado);
   if (yaP) {
     const sec = document.createElement('div');
@@ -875,7 +916,6 @@ function renderModal() {
     body.appendChild(sec);
   }
 
-  // Categorías del menú
   let total = 0;
   for (const [cat, items] of Object.entries(menu)) {
     const catDiv  = document.createElement('div');
@@ -888,12 +928,10 @@ function renderModal() {
       for (const [k, v] of Object.entries(carrito)) {
         if (k === item.id || k.startsWith(item.id + '|')) totalCant += v;
       }
-
       const row  = document.createElement('div');
       row.className = 'item' + (totalCant > 0 ? ' activo' : '');
       const hasVariants = item.variantes && item.variantes.length > 0;
       const variantTag = `<div class="item-variantes">${hasVariants ? item.variantes.map(v => v.nombre).join(', ') : ''}</div>`;
-
       row.innerHTML = `
         <div class="item-info">
           <div class="item-nombre">${item.nombre}</div>
@@ -906,7 +944,6 @@ function renderModal() {
           <button class="btn-cant" onclick="seleccionarVariante('${item.id}', 1)">+</button>
         </div>`;
       catDiv.appendChild(row);
-
       for (const [k, cant] of Object.entries(carrito)) {
         const [id, varName] = k.split('|');
         if (id !== item.id) continue;
@@ -927,32 +964,35 @@ function renderModal() {
   body.scrollTop = scrollY;
 }
 
-
-
 function confirmarPedido() {
   const items = [];
   let total   = 0;
-  getMenuFlat().forEach(item => {
-    const c = carrito[item.id] || 0;
-    if (c > 0) { items.push({ ...item, cantidad: c }); total += item.precio * c; }
-  });
+  const flat = getMenuFlat();
+  for (const [key, cant] of Object.entries(carrito)) {
+    if (cant <= 0) continue;
+    const [itemId, varName] = key.split('|');
+    const item = flat.find(i => i.id === itemId);
+    if (!item) continue;
+    let precio = item.precio;
+    if (varName && item.variantes) {
+      const v = item.variantes.find(v => v.nombre === varName);
+      if (v) precio = v.precio;
+    }
+    items.push({ id: item.id, nombre: item.nombre, precio: precio, cantidad: cant, variante: varName || null });
+    total += precio * cant;
+  }
 
   const existente = pedidos.find(p => p.mesa === mesaActual && !p.entregado);
   if (existente) {
-    // FIX: no sobreescribir hora original
     for (const it of items) {
-      const prev = existente.items.find(i => i.id === it.id);
+      const prev = existente.items.find(i => i.id === it.id && (i.variante || null) === (it.variante || null));
       if (prev) prev.cantidad += it.cantidad;
       else existente.items.push(it);
     }
-    existente.total      = existente.items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    existente.total = existente.items.reduce((s, i) => s + i.precio * i.cantidad, 0);
     existente.actualizado = new Date().toISOString();
   } else {
-    pedidos.push({
-      id: Date.now(), mesa: mesaActual,
-      items, total, hora: new Date().toISOString(),
-      entregado: false, pagado: false, metodoPago: null
-    });
+    pedidos.push({ id: Date.now(), mesa: mesaActual, items, total, hora: new Date().toISOString(), entregado: false, pagado: false, metodoPago: null });
   }
 
   const mesaGuardada = mesaActual;
@@ -960,38 +1000,90 @@ function confirmarPedido() {
   cerrarModal();
   renderMesas();
   toast('Pedido mesa ' + mesaGuardada + ' ✓');
-
-  // Notificar
   if (notificacionesActivas()) {
-    notificar('Nuevo pedido - Mesa ' + mesaGuardada, 
-      items.map(i => i.cantidad + 'x ' + i.nombre + (i.variante ? ' (' + i.variante + ')' : '')).join(', ')
-    );
+    notificar('Nuevo pedido - Mesa ' + mesaGuardada, items.map(i => i.cantidad + 'x ' + i.nombre + (i.variante ? ' (' + i.variante + ')' : '')).join(', '));
   }
+}
+
+// ========== SERVIR ==========
+function renderServir() {
+  actualizarBadges();
+  if (subtabActivo === 'pendientes') {
+    const pend = pedidos.filter(p => !p.entregado).sort((a, b) => {
+      const da = new Date(a.hora), db = new Date(b.hora);
+      if (isNaN(da)) return 1;
+      if (isNaN(db)) return -1;
+      return da - db;
+    });
+    const cont = document.getElementById('listaPendientes');
+    if (!pend.length) {
+      cont.innerHTML = '<div class="empty-state">No hay pedidos pendientes</div>';
+      return;
+    }
+    cont.innerHTML = '';
+    for (const p of pend) {
+      const urgente = (Date.now() - new Date(p.hora)) > 20 * 60000;
+      const card = document.createElement('div');
+      card.className = 'pedido-card' + (urgente ? ' urgente' : '');
+      const itemsHtml = p.items.map(i => {
+        const varText = i.variante ? ' (' + i.variante + ')' : '';
+        return `<div class="pedido-item"><span>${i.cantidad}× ${i.nombre}${varText}</span><span>${fEuros(i.precio * i.cantidad)}</span></div>`;
+      }).join('');
+      card.innerHTML = `
+        <div class="pedido-header">
+          <span class="pedido-mesa">Mesa ${p.mesa}</span>
+          <span class="pedido-tiempo" style="color:${colorTiempo(p.hora)}">${tiempoDesde(p.hora)}</span>
+        </div>
+        <div class="pedido-items">${itemsHtml}</div>
+        <div class="pedido-total">${fEuros(p.total)}</div>
+        <div class="pedido-actions">
+          <button class="btn-pago efectivo" onclick="pedirCobrar(${p.id},'efectivo')">Efectivo</button>
+          <button class="btn-pago tarjeta"  onclick="pedirCobrar(${p.id},'tarjeta')">Tarjeta</button>
+          <button class="btn-cancelar"      onclick="pedirCancelar(${p.id})" title="Cancelar pedido">✕</button>
+        </div>`;
+      cont.appendChild(card);
+    }
+  } else {
+    const hoy  = fFecha(new Date());
+    const list = (tickets[hoy] || []);
+    const cont = document.getElementById('listaHistorial');
+    if (!list.length) {
+      cont.innerHTML = '<div class="empty-state">Sin pedidos cobrados hoy</div>';
+      return;
+    }
+    cont.innerHTML = '';
+    for (const t of [...list].reverse()) {
+      const card = document.createElement('div');
+      card.className = 'pedido-card';
+      const itemsHtml = t.items.map(i => {
+        const varText = i.variante ? ' (' + i.variante + ')' : '';
+        return `<div class="pedido-item"><span>${i.cantidad}× ${i.nombre}${varText}</span><span>${fEuros(i.precio * i.cantidad)}</span></div>`;
+      }).join('');
+      card.innerHTML = `
+        <div class="pedido-header">
+          <span class="pedido-mesa">Mesa ${t.mesa}</span>
+          <span class="pedido-tiempo">${fHora(new Date(t.hora))} · ${t.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</span>
+        </div>
+        <div class="pedido-items">${itemsHtml}</div>
+        <div class="pedido-total">${fEuros(t.total)}</div>`;
+      cont.appendChild(card);
+    }
+  }
+}
 
 function pedirCobrar(id, metodo) {
   const p = pedidos.find(p => p.id === id);
   if (!p) return;
-  confirmar(
-    'Cobrar mesa ' + p.mesa,
-    `${fEuros(p.total)} en ${metodo}. ¿Confirmar cobro?`,
-    'Cobrar',
-    () => finalizar(id, metodo)
-  );
+  confirmar('Cobrar mesa ' + p.mesa, `${fEuros(p.total)} en ${metodo}. ¿Confirmar cobro?`, 'Cobrar', () => finalizar(id, metodo));
 }
 
 function pedirCancelar(id) {
   const p = pedidos.find(p => p.id === id);
   if (!p) return;
-  confirmar(
-    'Cancelar pedido',
-    `¿Cancelar el pedido de mesa ${p.mesa}? No quedará en el historial.`,
-    'Cancelar pedido',
-    () => cancelarPedido(id)
-  );
+  confirmar('Cancelar pedido', `¿Cancelar el pedido de mesa ${p.mesa}? No quedará en el historial.`, 'Cancelar pedido', () => cancelarPedido(id));
 }
 
 function finalizar(id, metodo) {
-  // FIX: eliminar del array pedidos en lugar de solo marcar entregado
   const idx = pedidos.findIndex(p => p.id === id);
   if (idx === -1) return;
   const p = { ...pedidos[idx], entregado: true, pagado: true, metodoPago: metodo };
@@ -1003,11 +1095,10 @@ function finalizar(id, metodo) {
   renderServir();
   renderMesas();
   toast('Mesa ' + p.mesa + ' cobrada ✓');
-
   if (notificacionesActivas()) {
-    notificar('Mesa ' + p.mesa + ' cobrada', 
-      fEuros(p.total) + ' por ' + (p.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'));
+    notificar('Mesa ' + p.mesa + ' cobrada', fEuros(p.total) + ' por ' + (p.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'));
   }
+}
 
 function cancelarPedido(id) {
   const idx = pedidos.findIndex(p => p.id === id);
@@ -1015,14 +1106,10 @@ function cancelarPedido(id) {
   const mesa = pedidos[idx].mesa;
   pedidos.splice(idx, 1);
   guardar();
-
-
-  // Si el modal está abierto para la mesa cancelada, cerrarlo
   if (mesaActual === mesa) {
     cerrarModal();
     cerrarVariantSelector();
   }
-
   renderServir();
   renderMesas();
   toast('Pedido mesa ' + mesa + ' cancelado');
@@ -1032,8 +1119,7 @@ function cancelarPedido(id) {
 function renderTickets() {
   const fechaStr = fFecha(fechaTickets);
   const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('fechaTickets').textContent =
-    fechaTickets.toLocaleDateString('es-ES', opciones);
+  document.getElementById('fechaTickets').textContent = fechaTickets.toLocaleDateString('es-ES', opciones);
 
   const lista = tickets[fechaStr] || [];
   const cont  = document.getElementById('listaTickets');
@@ -1059,10 +1145,7 @@ function renderTickets() {
     div.className = 'ticket';
     const itemsHtml = t.items.map(i => {
       const varText = i.variante ? ' (' + i.variante + ')' : '';
-      return `<div class="ticket-item">
-        <span>${i.cantidad}× ${i.nombre}${varText}</span>
-        <span>${fEuros(i.precio * i.cantidad)}</span>
-      </div>`;
+      return `<div class="ticket-item"><span>${i.cantidad}× ${i.nombre}${varText}</span><span>${fEuros(i.precio * i.cantidad)}</span></div>`;
     }).join('');
     div.innerHTML = `
       <div class="ticket-top">
@@ -1091,20 +1174,14 @@ function irHoy() {
   renderTickets();
 }
 
-// ========== CONFIG ==========
+// ========== CONFIG / MENU EDITOR ==========
 function renderConfig() {
   document.getElementById('inputMesas').value = numMesas;
   renderMenuEditor();
 
-  // Notificaciones config
   const notifDiv = document.getElementById('notificacionesConfig');
-
   if (!('Notification' in window)) {
-    notifDiv.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="width:10px;height:10px;border-radius:50%;background:#555;"></div>
-        <span style="font-size:14px;color:#888;">No soportado en este dispositivo</span>
-      </div>`;
+    notifDiv.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:10px;height:10px;border-radius:50%;background:#555;"></div><span style="font-size:14px;color:#888;">No soportado en este dispositivo</span></div>`;
   } else if (Notification.permission === 'granted') {
     const activas = localStorage.getItem('bar_notificaciones') === '1';
     notifDiv.innerHTML = `
@@ -1119,139 +1196,35 @@ function renderConfig() {
         <div style="width:10px;height:10px;border-radius:50%;background:#e05050;"></div>
         <span style="font-size:14px;color:#e08080;">Bloqueadas por el navegador</span>
       </div>
-      <div style="font-size:12px;color:#555;margin-bottom:10px;">
-        Ve a Ajustes del navegador → Permisos → Notificaciones → Permitir
-      </div>`;
+      <div style="font-size:12px;color:#555;margin-bottom:10px;">Ve a Ajustes del navegador → Permisos → Notificaciones</div>`;
   } else {
-    // permission === 'default' (no se ha preguntado aún)
     notifDiv.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div style="width:10px;height:10px;border-radius:50%;background:#d4c49a;"></div>
         <span style="font-size:14px;color:#d4c49a;">Pendiente de permiso</span>
       </div>
-      <div style="font-size:12px;color:#555;margin-bottom:10px;">
-        La app te pedirá permiso para enviar notificaciones del sistema
-      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;">La app te pedirá permiso para enviar notificaciones del sistema</div>
       <button class="btn-config" onclick="pedirPermisoNotificaciones()">Permitir notificaciones</button>`;
-  }`;
-}
-
-function toggleNotificaciones() {
-  const actual = localStorage.getItem('bar_notificaciones') === '1';
-  if (actual) {
-    localStorage.setItem('bar_notificaciones', '0');
-    toast('Notificaciones desactivadas');
-    renderConfig();
-  } else {
-    pedirPermisoNotificaciones();
   }
-}
-
-function notificar(titulo, mensaje, opciones) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
-
-  try {
-    new Notification(titulo, {
-      body: mensaje,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍺</text></svg>',
-      tag: opciones?.tag || 'barapp',
-      requireInteraction: opciones?.persistente || false,
-      vibrate: opciones?.vibrar !== false ? [200, 100, 200] : []
-    });
-  } catch(e) {}
-}
-
-function pedirPermisoNotificaciones() {
-  if (!('Notification' in window)) {
-    toast('Notificaciones no soportadas en este dispositivo');
-    return;
-  }
-
-  if (Notification.permission === 'granted') {
-    localStorage.setItem('bar_notificaciones', '1');
-    toast('Notificaciones activadas');
-    renderConfig();
-    return;
-  }
-
-  if (Notification.permission === 'denied') {
-    toast('Permiso bloqueado. Ve a Ajustes del navegador → Notificaciones');
-    return;
-  }
-
-  Notification.requestPermission().then((perm) => {
-    if (perm === 'granted') {
-      localStorage.setItem('bar_notificaciones', '1');
-      toast('Notificaciones activadas');
-      // Enviar notificación de prueba
-      notificar('BarApp', 'Notificaciones activadas correctamente');
-    } else {
-      localStorage.setItem('bar_notificaciones', '0');
-      toast('Permiso denegado');
-    }
-    renderConfig();
-  });
-}
-
-function notificacionesActivas() {
-  return localStorage.getItem('bar_notificaciones') === '1' && Notification.permission === 'granted';
-}
-
-function mostrarBanner(titulo, mensaje) {
-  const banner = document.createElement('div');
-  banner.style.cssText = `
-    position: fixed; top: 10px; left: 10px; right: 10px;
-    background: #1a2a1a; border: 1px solid #3a5a3a; border-radius: 12px;
-    padding: 14px 18px; z-index: 400; color: #a8e6a8;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    animation: slideDown 0.3s ease;
-  `;
-  banner.innerHTML = `
-    <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">${titulo}</div>
-    <div style="font-size: 13px; color: #7ec87e;">${mensaje}</div>
-  `;
-
-  const close = document.createElement('button');
-  close.textContent = '×';
-  close.style.cssText = `
-    position: absolute; top: 8px; right: 12px;
-    background: none; border: none; color: #5a9a5a;
-    font-size: 20px; cursor: pointer; padding: 0;
-  `;
-  close.onclick = () => banner.remove();
-  banner.appendChild(close);
-
-  document.body.appendChild(banner);
-  setTimeout(() => banner.remove(), 4000);
 }
 
 function renderMenuEditor() {
   const container = document.getElementById('menuEditor');
   container.innerHTML = '';
-
   const nombres = { bebidas: 'Bebidas', comidas: 'Comidas', postres: 'Postres' };
-
   for (const [cat, items] of Object.entries(menu)) {
     const group = document.createElement('div');
     group.className = 'menu-cat-group';
-
     const title = document.createElement('div');
     title.className = 'menu-cat-title';
     title.textContent = nombres[cat];
     group.appendChild(title);
-
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const row = document.createElement('div');
       row.className = 'menu-item-row';
-
       const hasVariants = item.variantes && item.variantes.length > 0;
-      const varTag = hasVariants 
-        ? `<span class="variantes-tag">${item.variantes.length} variantes</span>` 
-        : '';
-
+      const varTag = hasVariants ? `<span class="variantes-tag">${item.variantes.length} variantes</span>` : '';
       row.innerHTML = `
         <input type="text" value="${item.nombre}" onchange="editarItemNombre('${cat}', ${i}, this.value)" placeholder="Nombre">
         <input type="number" class="price" value="${item.precio.toFixed(2)}" step="0.01" min="0" onchange="editarItemPrecio('${cat}', ${i}, this.value)">
@@ -1260,8 +1233,6 @@ function renderMenuEditor() {
         <button class="btn-menu-delete" onclick="eliminarItem('${cat}', ${i})" title="Eliminar">X</button>
       `;
       group.appendChild(row);
-
-      // Variants editor
       const varEditor = document.createElement('div');
       varEditor.className = 'variants-editor';
       varEditor.id = `variants-${cat}-${i}`;
@@ -1272,13 +1243,11 @@ function renderMenuEditor() {
       `;
       group.appendChild(varEditor);
     }
-
     const btnAdd = document.createElement('button');
     btnAdd.className = 'btn-add-item';
     btnAdd.textContent = '+ Añadir ' + nombres[cat].toLowerCase().slice(0, -1);
     btnAdd.onclick = () => agregarItem(cat);
     group.appendChild(btnAdd);
-
     container.appendChild(group);
   }
 }
@@ -1296,27 +1265,17 @@ function editarItemPrecio(cat, idx, precio) {
 }
 
 function eliminarItem(cat, idx) {
-  confirmar(
-    'Eliminar item',
-    `¿Eliminar "${menu[cat][idx].nombre}" del menú?`,
-    'Eliminar',
-    () => {
-      menu[cat].splice(idx, 1);
-      guardar();
-      renderMenuEditor();
-      toast('Item eliminado');
-    }
-  );
+  confirmar('Eliminar item', `¿Eliminar "${menu[cat][idx].nombre}" del menú?`, 'Eliminar', () => {
+    menu[cat].splice(idx, 1);
+    guardar();
+    renderMenuEditor();
+    toast('Item eliminado');
+  });
 }
 
 function agregarItem(cat) {
   const id = (cat[0] + Date.now() + Math.floor(Math.random() * 1000)).replace(/\|/g, '_');
-  menu[cat].push({
-    id: id,
-    nombre: 'Nuevo item',
-    precio: 0,
-    variantes: []
-  });
+  menu[cat].push({ id: id, nombre: 'Nuevo item', precio: 0, variantes: [] });
   guardar();
   renderMenuEditor();
   toast('Item añadido');
@@ -1325,9 +1284,7 @@ function agregarItem(cat) {
 function toggleVariantesEditor(cat, idx) {
   const editor = document.getElementById(`variants-${cat}-${idx}`);
   const isActive = editor.classList.contains('active');
-
   document.querySelectorAll('.variants-editor').forEach(e => e.classList.remove('active'));
-
   if (!isActive) {
     editor.classList.add('active');
     renderVariantesList(cat, idx);
@@ -1338,12 +1295,10 @@ function renderVariantesList(cat, idx) {
   const item = menu[cat][idx];
   const list = document.getElementById(`variant-list-${cat}-${idx}`);
   list.innerHTML = '';
-
   if (!item.variantes || item.variantes.length === 0) {
     list.innerHTML = '<div style="color:#444;font-size:12px;padding:4px 0;">Sin variantes</div>';
     return;
   }
-
   for (let v = 0; v < item.variantes.length; v++) {
     const varRow = document.createElement('div');
     varRow.className = 'variant-row';
@@ -1376,10 +1331,7 @@ function eliminarVariante(cat, idx, vIdx) {
 
 function agregarVariante(cat, idx) {
   if (!menu[cat][idx].variantes) menu[cat][idx].variantes = [];
-  menu[cat][idx].variantes.push({
-    nombre: 'Nueva variante',
-    precio: menu[cat][idx].precio
-  });
+  menu[cat][idx].variantes.push({ nombre: 'Nueva variante', precio: menu[cat][idx].precio });
   guardar();
   renderVariantesList(cat, idx);
   renderMenuEditor();
@@ -1394,22 +1346,19 @@ function guardarConfig() {
 }
 
 function pedirLimpiar() {
-  confirmar(
-    'Borrar todos los datos',
-    'Se eliminarán todos los pedidos activos y el historial de tickets. Esta acción no se puede deshacer.',
-    'Borrar todo',
-    () => {
-      pedidos = []; tickets = {};
-      localStorage.removeItem('bar_pedidos');
-      localStorage.removeItem('bar_tickets');
-      renderMesas();
-      toast('Datos borrados');
-    }
-  );
+  confirmar('Borrar todos los datos', 'Se eliminarán todos los pedidos activos y el historial de tickets. Esta acción no se puede deshacer.', 'Borrar todo', () => {
+    pedidos = []; tickets = {};
+    localStorage.removeItem('bar_pedidos');
+    localStorage.removeItem('bar_tickets');
+    renderMesas();
+    toast('Datos borrados');
+  });
 }
 
 // ========== INIT ==========
 renderMesas();
+
 </script>
+
 </body>
 </html>
